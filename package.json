@@ -1,6 +1,6 @@
 {
   "name": "leeyee-blog",
-  "version": "1.7.7",
+  "version": "1.8.0",
   "private": true,
   "description": "LeeYee 的极简静态博客（Vue 3 + Markdown）",
   "scripts": {
