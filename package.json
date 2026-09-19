@@ -1,0 +1,10 @@
+{
+  "name": "leeyee-blog",
+  "version": "1.7.7",
+  "private": true,
+  "description": "LeeYee 的极简静态博客（Vue 3 + Markdown）",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "index": "node scripts/build-index.js"
+  }
+}

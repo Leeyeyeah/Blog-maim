@@ -1,0 +1,2259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeeYee</title>
+  <meta name="description" content="LeeYee 的博客：记录折腾 VPS、域名、AI 工具与建站日常。">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:site_name" content="LeeYee">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LeeYee">
+  <meta property="og:description" content="LeeYee 的博客：记录折腾 VPS、域名、AI 工具与建站日常。">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <link rel="stylesheet" href="css/style.css?v=1.7.7">
+  <script>
+    // 在首屏渲染前同步应用主题，避免暗色偏好用户先看到一帧亮色
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var dark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- 导航栏 -->
+    <header>
+      <div class="header-inner">
+        <div class="logo">
+          <a href="#/">{{ blog.title }}</a>
+        </div>
+        <div class="header-right">
+          <nav>
+            <a href="#/" :class="{ active: currentPage === 'home' }">文章</a>
+            <a href="#/photos" :class="{ active: currentPage === 'photos' }">照片墙</a>
+            <a href="#/about" :class="{ active: currentPage === 'about' }">关于</a>
+            <a href="#/cardwall" :class="{ active: currentPage === 'cardwall' }">卡片墙</a>
+          </nav>
+          <button class="theme-toggle" @click="toggleTheme" :aria-label="theme === 'light' ? '切换到暗色模式' : '切换到亮色模式'">
+            <svg v-if="theme === 'light'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- 左侧栏：个人资料 + 站点统计；窄屏随文档流，宽屏固定在文章列左侧空白处 -->
+      <!-- 卡片墙页不显示侧栏，卡片由卡片墙页面集中展示 -->
+      <div class="side-rail-left" v-if="currentPage !== 'cardwall'">
+      <!-- 个人资料卡片：除卡片墙页外所有页面显示 -->
+      <section class="profile-card">
+        <div class="profile-cover">
+          <img
+            v-if="!avatarError"
+            :src="profile.avatar"
+            :alt="profile.name"
+            @error="avatarError = true"
+          >
+          <div v-else class="profile-avatar-fallback">{{ profile.name.charAt(0) }}</div>
+        </div>
+        <div class="profile-body">
+          <h3 class="profile-name">{{ profile.name }}<span class="profile-emoji">{{ profile.emoji }}</span></h3>
+          <span class="profile-divider"></span>
+          <p class="profile-bio">{{ profile.bio }}</p>
+          <div class="profile-links">
+            <a
+              v-for="link in profile.links"
+              :key="link.label"
+              :href="link.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="profile-link"
+              :title="link.label"
+              :aria-label="link.label"
+            >
+              <svg v-if="link.icon === 'github'" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/>
+              </svg>
+              <svg v-else-if="link.icon === 'mail'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                <path d="m3 7 9 6 9-6"/>
+              </svg>
+              <span v-else class="profile-link-text">{{ link.text || link.label }}</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 站点统计：数据由已加载的文章自动计算 -->
+      <section class="site-stats-card" aria-labelledby="site-stats-title">
+        <div class="site-stats-header">
+          <h3 id="site-stats-title" class="site-stats-title">站点统计</h3>
+        </div>
+        <div class="site-stats-grid">
+          <div class="site-stat">
+            <strong class="site-stat-value">{{ siteStats.articleCount }}</strong>
+            <span class="site-stat-label">文章</span>
+          </div>
+          <div class="site-stat">
+            <strong class="site-stat-value">{{ siteStats.categoryCount }}</strong>
+            <span class="site-stat-label">分类</span>
+          </div>
+          <div class="site-stat">
+            <strong class="site-stat-value">{{ siteStats.wordCount }}</strong>
+            <span class="site-stat-label">累计字数</span>
+          </div>
+          <div class="site-stat">
+            <strong class="site-stat-value">{{ siteStats.latestUpdate }}</strong>
+            <span class="site-stat-label">最近更新</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 音乐卡片：播放 music 文件夹里的单曲 -->
+      <section class="music-card" aria-labelledby="music-card-title">
+        <div class="music-header">
+          <h3 id="music-card-title" class="music-title">音乐</h3>
+          <span class="music-eq" :class="{ 'is-playing': music.playing }" aria-hidden="true">
+            <i></i><i></i><i></i><i></i>
+          </span>
+        </div>
+        <div class="music-body">
+          <div class="music-disc" :class="{ 'is-spinning': music.playing }" aria-hidden="true">
+            <span class="music-disc-note">♪</span>
+          </div>
+          <div class="music-meta">
+            <p class="music-song" :title="music.name">{{ music.name }}</p>
+            <p class="music-artist" :title="music.artist">{{ music.artist }}</p>
+          </div>
+          <button
+            class="music-toggle"
+            @click="toggleMusic"
+            :title="music.playing ? '暂停' : '播放'"
+            :aria-label="music.playing ? '暂停播放' : '开始播放'"
+          >
+            <svg v-if="!music.playing" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8 5.14v13.72c0 .8.87 1.3 1.56.9l11-6.86a1.05 1.05 0 0 0 0-1.8l-11-6.86c-.69-.4-1.56.1-1.56.9Z"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="6" y="5" width="4" height="14" rx="1.2"/>
+              <rect x="14" y="5" width="4" height="14" rx="1.2"/>
+            </svg>
+          </button>
+        </div>
+        <div
+          class="music-progress"
+          role="slider"
+          tabindex="0"
+          aria-label="播放进度"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="Math.round(musicProgressPercent)"
+          :aria-valuetext="formatMusicTime(music.currentTime) + ' / ' + formatMusicTime(music.duration)"
+          @click="seekMusic"
+          @keydown="handleMusicKeydown"
+        >
+          <div class="music-progress-fill" :style="{ width: musicProgressPercent + '%' }"></div>
+        </div>
+        <div class="music-times">
+          <span>{{ formatMusicTime(music.currentTime) }}</span>
+          <span>{{ formatMusicTime(music.duration) }}</span>
+        </div>
+      </section>
+      </div>
+
+      <!-- 右侧栏：天气/IP/更新热力卡片 + 目录卡片（仅文章页显示） -->
+      <!-- 窄屏随文档流居中排列；宽屏整体固定到文章列右侧空白处；卡片墙页不显示，卡片收进卡片墙页面 -->
+      <div class="side-rail-right" v-if="currentPage !== 'cardwall'">
+      <!-- 天气卡片 -->
+      <section class="weather-card">
+        <div class="weather-header">
+          <h3 class="weather-title">天气</h3>
+          <div class="weather-header-right">
+            <span class="weather-updated" v-if="weather.updated && !weather.loading && !weather.error">{{ weather.updated }} 更新</span>
+            <button
+              class="weather-refresh"
+              :class="{ spinning: weather.loading }"
+              @click="refreshWeather"
+              :disabled="weather.loading"
+              title="刷新天气"
+              aria-label="刷新天气"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                <polyline points="21 3 21 9 15 9"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div v-if="weather.loading" class="weather-state">
+          <span class="weather-spinner"></span>
+          <span>加载中...</span>
+        </div>
+        <div v-else-if="weather.error" class="weather-state">
+          <span>☁️ 天气加载失败</span>
+        </div>
+        <div v-else class="weather-body">
+          <div class="weather-row">
+            <span class="weather-city">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ weather.city }}
+            </span>
+            <span class="weather-desc">{{ weather.desc }}</span>
+          </div>
+          <div class="weather-row weather-main">
+            <span class="weather-icon">{{ weather.icon }}</span>
+            <span class="weather-temp">{{ weather.temp }}<small>°C</small></span>
+            <div class="weather-meta">
+              <span>{{ weather.wind }}</span>
+              <span>湿度 {{ weather.humidity }}%</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- IP 卡片 -->
+      <section class="ip-card">
+        <div class="ip-header">
+          <h3 class="ip-title">IP</h3>
+          <div class="ip-header-right">
+            <span class="ip-updated" v-if="ip.updated && !ip.loading && !ip.error">{{ ip.updated }} 更新</span>
+            <button
+              class="ip-refresh"
+              :class="{ spinning: ip.loading }"
+              @click="refreshIp"
+              :disabled="ip.loading"
+              title="刷新 IP"
+              aria-label="刷新 IP"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                <polyline points="21 3 21 9 15 9"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div v-if="ip.loading" class="ip-state">
+          <span class="ip-spinner"></span>
+          <span>加载中...</span>
+        </div>
+        <div v-else-if="ip.error" class="ip-state">
+          <span>🌐 IP 加载失败</span>
+        </div>
+        <div v-else class="ip-body">
+          <div class="ip-row">
+            <span class="ip-label">IP 地址</span>
+            <span class="ip-value">{{ ip.address }}</span>
+          </div>
+          <div class="ip-row">
+            <span class="ip-label">归属地</span>
+            <span class="ip-value">{{ ip.location }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 更新热力卡片：GitHub 贡献图风格，按文章日期统计近半年更新频率 -->
+      <section class="heat-card" aria-labelledby="heat-card-title">
+        <div class="heat-header">
+          <h3 id="heat-card-title" class="heat-title">更新热力</h3>
+        </div>
+        <p class="heat-summary">近半年更新 <strong>{{ heatmap.total }}</strong> 次</p>
+        <div class="heat-chart">
+          <div class="heat-months" aria-hidden="true">
+            <span
+              v-for="(month, i) in heatmap.months"
+              :key="i"
+              class="heat-month"
+              :class="{ 'heat-month-end': month.end }"
+              :style="{ gridColumn: month.col }"
+            >{{ month.label }}</span>
+          </div>
+          <div class="heat-body">
+            <div class="heat-days" aria-hidden="true">
+              <span v-for="(label, i) in heatmap.dayLabels" :key="i" class="heat-day">{{ label }}</span>
+            </div>
+            <div class="heat-grid" role="img" :aria-label="'近半年更新热力图，共 ' + heatmap.total + ' 次更新'">
+              <span
+                v-for="(cell, i) in heatmap.cells"
+                :key="i"
+                class="heat-cell"
+                :class="cell.future ? 'heat-future' : 'heat-l' + cell.level"
+                :title="cell.title"
+              ></span>
+            </div>
+          </div>
+        </div>
+        <div class="heat-footer">
+          <span class="heat-legend-label">少</span>
+          <span class="heat-cell heat-l0"></span>
+          <span class="heat-cell heat-l1"></span>
+          <span class="heat-cell heat-l2"></span>
+          <span class="heat-cell heat-l3"></span>
+          <span class="heat-cell heat-l4"></span>
+          <span class="heat-legend-label">多</span>
+        </div>
+      </section>
+
+      <!-- 目录卡片：仅文章页且文章含标题时显示，点击目录项平滑滚动到对应小节 -->
+      <section class="toc-card" v-if="currentPage === 'article' && toc.length > 0">
+        <div class="toc-header">
+          <h3 class="toc-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/>
+              <line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/>
+              <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            目录
+          </h3>
+        </div>
+        <nav class="toc-list" aria-label="文章目录">
+          <a
+            v-for="item in toc"
+            :key="item.id"
+            href="#"
+            class="toc-item"
+            :class="['toc-depth-' + item.depth, { active: item.id === activeTocId }]"
+            :title="item.text"
+            @click.prevent="scrollToHeading(item.id)"
+          >{{ item.text }}</a>
+        </nav>
+      </section>
+      </div>
+
+      <!-- 首页：文章列表 -->
+      <div v-if="currentPage === 'home'">
+        <div class="page-header">
+          <h2>所有文章</h2>
+          <p class="page-subtitle" v-if="articles.length">共 {{ articles.length }} 篇</p>
+        </div>
+
+        <div v-if="loading" class="loading-state">
+          <p>加载中...</p>
+        </div>
+
+        <div v-else-if="articles.length === 0" class="empty-state">
+          <p>还没有文章。在 <code>articles/</code> 里放一个 <code>.md</code>，运行 <code>node scripts/build-index.js</code> 后刷新即可。</p>
+        </div>
+
+        <section v-else class="article-list">
+          <article
+            v-for="article in pagedArticles"
+            :key="article.id"
+            :id="articleCardId(article.id)"
+            class="article-card"
+          >
+            <a class="article-card-link" :href="'#/article/' + encodeURIComponent(article.id)">
+              <div class="article-card-body">
+                <div class="article-meta">
+                  <time>{{ article.date }}</time>
+                  <span class="category-tag" v-if="article.category">{{ article.category }}</span>
+                </div>
+                <h2>{{ article.title }}</h2>
+                <p class="article-summary">{{ article.summary }}</p>
+                <span class="read-more">阅读全文 →</span>
+              </div>
+            </a>
+          </article>
+        </section>
+
+        <nav class="pagination" v-if="totalPages > 1">
+          <button class="page-btn" @click="prevPage" :disabled="currentListPage === 1">← 上一页</button>
+          <span class="page-numbers">
+            <button
+              v-for="n in totalPages"
+              :key="n"
+              class="page-btn page-num"
+              :class="{ active: n === currentListPage }"
+              @click="goToPage(n)"
+            >{{ n }}</button>
+          </span>
+          <button class="page-btn" @click="nextPage" :disabled="currentListPage === totalPages">下一页 →</button>
+        </nav>
+      </div>
+
+      <!-- 文章详情页 -->
+      <div v-if="currentPage === 'article'" class="article-detail">
+        <div v-if="loadingArticle" class="loading-state">
+          <p>加载文章...</p>
+        </div>
+        <template v-else>
+          <!-- 窄屏目录：宽屏由右侧栏的目录卡片承担，这里折叠成一行不占版面 -->
+          <details class="toc-inline" v-if="toc.length > 0">
+            <summary>目录 · 共 {{ toc.length }} 节</summary>
+            <nav class="toc-list" aria-label="文章目录">
+              <a
+                v-for="item in toc"
+                :key="item.id"
+                href="#"
+                class="toc-item"
+                :class="'toc-depth-' + item.depth"
+                :title="item.text"
+                @click.prevent="scrollToHeading(item.id)"
+              >{{ item.text }}</a>
+            </nav>
+          </details>
+          <div class="article-detail-card">
+            <div class="article-detail-header">
+              <h1>{{ currentArticle.title }}</h1>
+              <div class="article-detail-meta">
+                <time>{{ currentArticle.date }}</time>
+                <span v-if="currentArticle.category" class="category-tag">{{ currentArticle.category }}</span>
+              </div>
+            </div>
+            <div class="article-content" v-html="currentArticleContent" @click="handleContentClick"></div>
+            <div class="article-footer">
+              <a
+                :href="articleListHref"
+                class="back-link"
+                @click.prevent="returnToArticleList"
+              >← 返回文章列表</a>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- 照片墙页面 -->
+      <div v-if="currentPage === 'photos'" class="page-photos">
+        <div class="page-header photos-page-header">
+          <div>
+            <p class="photos-eyebrow">MOMENTS / 生活切片</p>
+            <h2>照片墙</h2>
+            <p class="page-subtitle">把路过的风景、日常和灵感，留在这里。</p>
+          </div>
+          <div class="photo-count" aria-label="照片数量">
+            <strong>{{ filteredPhotos.length }}</strong>
+            <span>/ {{ photos.length }} 张</span>
+          </div>
+        </div>
+
+        <div class="photo-toolbar">
+          <div class="photo-filters" role="tablist" aria-label="照片分类">
+            <button
+              v-for="category in photoCategories"
+              :key="category"
+              class="photo-filter"
+              :class="{ active: photoFilter === category }"
+              type="button"
+              role="tab"
+              :aria-selected="photoFilter === category"
+              @click="setPhotoFilter(category)"
+            >{{ category }}</button>
+          </div>
+          <span class="photo-toolbar-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m20 20-4-4"/>
+            </svg>
+            点击照片查看大图
+          </span>
+        </div>
+
+        <div v-if="filteredPhotos.length" class="photo-grid">
+          <button
+            v-for="photo in filteredPhotos"
+            :key="photo.id"
+            class="photo-tile"
+            :class="{ 'photo-tile-broken': photo.broken }"
+            :style="{ '--photo-fallback': photo.color }"
+            type="button"
+            :aria-label="'查看照片：' + photo.title"
+            @click="openPhoto(photo)"
+          >
+            <img
+              :src="photo.src"
+              :alt="photo.title"
+              loading="lazy"
+              @error="markPhotoBroken(photo)"
+            >
+            <span class="photo-broken-state" aria-hidden="true">
+              <span>图片暂时无法加载</span>
+            </span>
+            <span class="photo-tile-overlay">
+              <span class="photo-tile-copy">
+                <small>{{ photo.category }} · {{ photo.date }}</small>
+                <strong>{{ photo.title }}</strong>
+                <span>{{ photo.description }}</span>
+              </span>
+              <span class="photo-open-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6.5"/>
+                  <path d="m16 16 4.5 4.5M11 8v6M8 11h6"/>
+                </svg>
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <div v-else class="photo-empty-state">
+          <span class="photo-empty-mark">○</span>
+          <strong>这个分类还没有照片</strong>
+          <span>换一个分类，看看别的生活切片。</span>
+        </div>
+
+        <!-- 照片灯箱 -->
+        <div
+          v-if="lightboxPhoto"
+          class="photo-lightbox"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="lightboxPhoto.title"
+          @click.self="closePhoto"
+        >
+          <div class="photo-lightbox-dialog">
+            <button ref="photoClose" class="photo-lightbox-close" type="button" aria-label="关闭大图" @click="closePhoto">×</button>
+            <button
+              v-if="filteredPhotos.length > 1"
+              class="photo-lightbox-nav photo-lightbox-prev"
+              type="button"
+              aria-label="上一张"
+              @click="showPreviousPhoto"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </button>
+            <figure>
+              <div class="photo-lightbox-image" :style="{ '--photo-fallback': lightboxPhoto.color }">
+                <img :src="lightboxPhoto.src" :alt="lightboxPhoto.title" @error="markPhotoBroken(lightboxPhoto)">
+              </div>
+              <figcaption class="photo-lightbox-caption">
+                <div>
+                  <span>{{ lightboxPhoto.category }} · {{ lightboxPhoto.date }}</span>
+                  <strong>{{ lightboxPhoto.title }}</strong>
+                  <p>{{ lightboxPhoto.description }}</p>
+                </div>
+                <small>{{ lightboxPhotoIndex + 1 }} / {{ filteredPhotos.length }}</small>
+              </figcaption>
+            </figure>
+            <button
+              v-if="filteredPhotos.length > 1"
+              class="photo-lightbox-nav photo-lightbox-next"
+              type="button"
+              aria-label="下一张"
+              @click="showNextPhoto"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 卡片墙页面：集中展示侧栏的全部卡片；目录卡片只在文章页出现，不放这里 -->
+      <div v-if="currentPage === 'cardwall'" class="page-cardwall">
+        <div class="page-header">
+          <p class="photos-eyebrow">WIDGETS / 卡片墙</p>
+          <h2>卡片墙</h2>
+          <p class="page-subtitle">站点的小卡片，排成一面墙。</p>
+        </div>
+        <div class="card-wall">
+          <div class="card-wall-grid">
+            <!-- 个人资料卡片（复制自左侧栏） -->
+            <section class="profile-card">
+              <div class="profile-cover">
+                <img
+                  v-if="!avatarError"
+                  :src="profile.avatar"
+                  :alt="profile.name"
+                  @error="avatarError = true"
+                >
+                <div v-else class="profile-avatar-fallback">{{ profile.name.charAt(0) }}</div>
+              </div>
+              <div class="profile-body">
+                <h3 class="profile-name">{{ profile.name }}<span class="profile-emoji">{{ profile.emoji }}</span></h3>
+                <span class="profile-divider"></span>
+                <p class="profile-bio">{{ profile.bio }}</p>
+                <div class="profile-links">
+                  <a
+                    v-for="link in profile.links"
+                    :key="link.label"
+                    :href="link.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="profile-link"
+                    :title="link.label"
+                    :aria-label="link.label"
+                  >
+                    <svg v-if="link.icon === 'github'" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.35.77 1.05.77 2.12 0 1.53-.01 2.76-.01 3.14 0 .3.2.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/>
+                    </svg>
+                    <svg v-else-if="link.icon === 'mail'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="5" width="18" height="14" rx="2"/>
+                      <path d="m3 7 9 6 9-6"/>
+                    </svg>
+                    <span v-else class="profile-link-text">{{ link.text || link.label }}</span>
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            <!-- 站点统计（复制自左侧栏） -->
+            <section class="site-stats-card" aria-labelledby="site-stats-title">
+              <div class="site-stats-header">
+                <h3 id="site-stats-title" class="site-stats-title">站点统计</h3>
+              </div>
+              <div class="site-stats-grid">
+                <div class="site-stat">
+                  <strong class="site-stat-value">{{ siteStats.articleCount }}</strong>
+                  <span class="site-stat-label">文章</span>
+                </div>
+                <div class="site-stat">
+                  <strong class="site-stat-value">{{ siteStats.categoryCount }}</strong>
+                  <span class="site-stat-label">分类</span>
+                </div>
+                <div class="site-stat">
+                  <strong class="site-stat-value">{{ siteStats.wordCount }}</strong>
+                  <span class="site-stat-label">累计字数</span>
+                </div>
+                <div class="site-stat">
+                  <strong class="site-stat-value">{{ siteStats.latestUpdate }}</strong>
+                  <span class="site-stat-label">最近更新</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- 音乐卡片（复制自左侧栏；音频元素全站唯一，挂在页面根部） -->
+            <section class="music-card" aria-labelledby="music-card-title">
+              <div class="music-header">
+                <h3 id="music-card-title" class="music-title">音乐</h3>
+                <span class="music-eq" :class="{ 'is-playing': music.playing }" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i>
+                </span>
+              </div>
+              <div class="music-body">
+                <div class="music-disc" :class="{ 'is-spinning': music.playing }" aria-hidden="true">
+                  <span class="music-disc-note">♪</span>
+                </div>
+                <div class="music-meta">
+                  <p class="music-song" :title="music.name">{{ music.name }}</p>
+                  <p class="music-artist" :title="music.artist">{{ music.artist }}</p>
+                </div>
+                <button
+                  class="music-toggle"
+                  @click="toggleMusic"
+                  :title="music.playing ? '暂停' : '播放'"
+                  :aria-label="music.playing ? '暂停播放' : '开始播放'"
+                >
+                  <svg v-if="!music.playing" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M8 5.14v13.72c0 .8.87 1.3 1.56.9l11-6.86a1.05 1.05 0 0 0 0-1.8l-11-6.86c-.69-.4-1.56.1-1.56.9Z"/>
+                  </svg>
+                  <svg v-else viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <rect x="6" y="5" width="4" height="14" rx="1.2"/>
+                    <rect x="14" y="5" width="4" height="14" rx="1.2"/>
+                  </svg>
+                </button>
+              </div>
+              <div
+                class="music-progress"
+                role="slider"
+                tabindex="0"
+                aria-label="播放进度"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                :aria-valuenow="Math.round(musicProgressPercent)"
+                :aria-valuetext="formatMusicTime(music.currentTime) + ' / ' + formatMusicTime(music.duration)"
+                @click="seekMusic"
+                @keydown="handleMusicKeydown"
+              >
+                <div class="music-progress-fill" :style="{ width: musicProgressPercent + '%' }"></div>
+              </div>
+              <div class="music-times">
+                <span>{{ formatMusicTime(music.currentTime) }}</span>
+                <span>{{ formatMusicTime(music.duration) }}</span>
+              </div>
+            </section>
+
+            <!-- 天气卡片（复制自右侧栏） -->
+            <section class="weather-card">
+              <div class="weather-header">
+                <h3 class="weather-title">天气</h3>
+                <div class="weather-header-right">
+                  <span class="weather-updated" v-if="weather.updated && !weather.loading && !weather.error">{{ weather.updated }} 更新</span>
+                  <button
+                    class="weather-refresh"
+                    :class="{ spinning: weather.loading }"
+                    @click="refreshWeather"
+                    :disabled="weather.loading"
+                    title="刷新天气"
+                    aria-label="刷新天气"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                      <polyline points="21 3 21 9 15 9"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div v-if="weather.loading" class="weather-state">
+                <span class="weather-spinner"></span>
+                <span>加载中...</span>
+              </div>
+              <div v-else-if="weather.error" class="weather-state">
+                <span>☁️ 天气加载失败</span>
+              </div>
+              <div v-else class="weather-body">
+                <div class="weather-row">
+                  <span class="weather-city">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    {{ weather.city }}
+                  </span>
+                  <span class="weather-desc">{{ weather.desc }}</span>
+                </div>
+                <div class="weather-row weather-main">
+                  <span class="weather-icon">{{ weather.icon }}</span>
+                  <span class="weather-temp">{{ weather.temp }}<small>°C</small></span>
+                  <div class="weather-meta">
+                    <span>{{ weather.wind }}</span>
+                    <span>湿度 {{ weather.humidity }}%</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- IP 卡片（复制自右侧栏） -->
+            <section class="ip-card">
+              <div class="ip-header">
+                <h3 class="ip-title">IP</h3>
+                <div class="ip-header-right">
+                  <span class="ip-updated" v-if="ip.updated && !ip.loading && !ip.error">{{ ip.updated }} 更新</span>
+                  <button
+                    class="ip-refresh"
+                    :class="{ spinning: ip.loading }"
+                    @click="refreshIp"
+                    :disabled="ip.loading"
+                    title="刷新 IP"
+                    aria-label="刷新 IP"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                      <polyline points="21 3 21 9 15 9"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div v-if="ip.loading" class="ip-state">
+                <span class="ip-spinner"></span>
+                <span>加载中...</span>
+              </div>
+              <div v-else-if="ip.error" class="ip-state">
+                <span>🌐 IP 加载失败</span>
+              </div>
+              <div v-else class="ip-body">
+                <div class="ip-row">
+                  <span class="ip-label">IP 地址</span>
+                  <span class="ip-value">{{ ip.address }}</span>
+                </div>
+                <div class="ip-row">
+                  <span class="ip-label">归属地</span>
+                  <span class="ip-value">{{ ip.location }}</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- 更新热力卡片（复制自右侧栏） -->
+            <section class="heat-card" aria-labelledby="heat-card-title">
+              <div class="heat-header">
+                <h3 id="heat-card-title" class="heat-title">更新热力</h3>
+              </div>
+              <p class="heat-summary">近半年更新 <strong>{{ heatmap.total }}</strong> 次</p>
+              <div class="heat-chart">
+                <div class="heat-months" aria-hidden="true">
+                  <span
+                    v-for="(month, i) in heatmap.months"
+                    :key="i"
+                    class="heat-month"
+                    :class="{ 'heat-month-end': month.end }"
+                    :style="{ gridColumn: month.col }"
+                  >{{ month.label }}</span>
+                </div>
+                <div class="heat-body">
+                  <div class="heat-days" aria-hidden="true">
+                    <span v-for="(label, i) in heatmap.dayLabels" :key="i" class="heat-day">{{ label }}</span>
+                  </div>
+                  <div class="heat-grid" role="img" :aria-label="'近半年更新热力图，共 ' + heatmap.total + ' 次更新'">
+                    <span
+                      v-for="(cell, i) in heatmap.cells"
+                      :key="i"
+                      class="heat-cell"
+                      :class="cell.future ? 'heat-future' : 'heat-l' + cell.level"
+                      :title="cell.title"
+                    ></span>
+                  </div>
+                </div>
+              </div>
+              <div class="heat-footer">
+                <span class="heat-legend-label">少</span>
+                <span class="heat-cell heat-l0"></span>
+                <span class="heat-cell heat-l1"></span>
+                <span class="heat-cell heat-l2"></span>
+                <span class="heat-cell heat-l3"></span>
+                <span class="heat-cell heat-l4"></span>
+                <span class="heat-legend-label">多</span>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- 关于页面 -->
+      <div v-if="currentPage === 'about'" class="page-about">
+        <div class="page-header">
+          <h2>关于</h2>
+        </div>
+        <div class="article-detail-card">
+          <div class="about-content">
+            <p>欢迎来到我的博客！这里记录了我对技术、设计和生活的思考与分享。</p>
+            <h3>关于本站</h3>
+            <p>这是一个使用 Vue.js 构建的静态博客系统。文章采用 Markdown 编写，存放在 <code>articles/</code> 目录下，系统会自动扫描并加载所有文章。</p>
+            <h3>如何使用</h3>
+            <ol>
+              <li>在 <code>articles/</code> 文件夹中创建 <code>.md</code> 文件</li>
+              <li>文章第一行以 <code># 标题</code> 格式书写标题</li>
+              <li>在标题下方添加 <code>> 日期：YYYY-MM-DD</code> 和 <code>> 分类：分类名</code> 来指定元数据</li>
+              <li>运行 <code>node scripts/build-index.js</code> 生成文章清单，刷新页面即可看到</li>
+            </ol>
+            <h3>技术栈</h3>
+            <ul>
+              <li>Vue 3 — 前端框架</li>
+              <li>Markdown — 内容格式</li>
+              <li>marked — Markdown 解析</li>
+              <li>原生 CSS — 样式设计</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 全站唯一的音频元素：侧栏与卡片墙两份音乐卡片共用，切换页面不打断播放 -->
+    <audio
+      ref="audioPlayer"
+      src="music/春畑道哉 - プロポーズ.mp3"
+      preload="metadata"
+      loop
+      @play="music.playing = true"
+      @pause="music.playing = false"
+      @ended="music.playing = false"
+      @timeupdate="onMusicTimeUpdate"
+      @loadedmetadata="onMusicMetadata"
+    ></audio>
+
+    <footer>
+      <div class="footer-inner">
+        <p>&copy; {{ new Date().getFullYear() }} {{ blog.title }}<span class="site-version">{{ blog.version }}</span><a class="footer-icp" href="https://icp.gov.moe/?keyword=20269884" target="_blank" rel="noopener noreferrer">萌ICP备20269884号</a><span class="footer-icp footer-icp-plain">假ICP备1202642号</span></p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 三方库本地化并锁定版本：不依赖 CDN，断网可用，也不会被上游版本变动悄悄改坏 -->
+  <script src="vendor/vue.global.prod.js"></script>
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/purify.min.js"></script>
+  <script src="vendor/highlight.min.js"></script>
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          currentPage: 'home',
+          currentArticleId: null,
+          currentArticleContent: '',
+          theme: 'light',
+          currentListPage: 1,
+          pendingListArticleId: null,
+          listFocusToken: 0,
+          pageSize: 5,
+          loading: true,
+          loadingArticle: false,
+          avatarError: false,
+          // 文章清单的缓存版本号：取自 index.json 的生成时间，清单更新后自动失效
+          assetVersion: '?v=1.7.7',
+          // 文章目录（TOC）：当前文章的标题大纲与滚动高亮状态
+          toc: [],
+          activeTocId: '',
+          blog: {
+            title: 'LeeYee',
+            // 站点版本号：展示在页脚；改动 css 后建议同步更新下方 style.css 的 ?v= 参数
+            version: 'v1.7.7'
+          },
+          // 个人资料卡片：改成你自己的信息即可
+          // avatar 加载失败时会自动显示名字首字母占位
+          profile: {
+            name: 'LeeYee',
+            bio: '真诚，热爱',
+            avatar: 'images/头像.png',
+            links: [
+              // icon 可选 'github' / 'mail'，其余用 text 显示文字（如 QQ）
+              { label: 'Telegram', text: 'TG', url: 'https://t.me/Leeyeeyeah' },
+              { label: 'GitHub', icon: 'github', url: 'https://github.com/Leeyeyeah' },
+              { label: '邮箱', icon: 'mail', url: 'mailto:email@leeyee.cn' }
+            ]
+          },
+          articles: [],
+          // 照片墙数据：替换 src 即可换成自己的照片；color 是图片加载失败时的渐变兜底
+          photos: [
+            {
+              id: 1,
+              title: '晚霞翻过宿舍楼',
+              category: '校园',
+              date: '2026.09.04',
+              description: '下课路上抬头，天空先我一步，把温柔调成了粉色。',
+              color: 'linear-gradient(135deg, #9aa7c9, #eec3d3)',
+              src: 'images/照片墙1.jpg'
+            },
+            {
+              id: 2,
+              title: '一整个夏天的绿',
+              category: '生活',
+              date: '2026.09.04',
+              description: '窗边的棉花娃娃踮着脚看楼下车来车往，把一整个夏天抱在怀里。',
+              color: 'linear-gradient(135deg, #9fbf8f, #e3efd6)',
+              src: 'images/照片墙2.jpg'
+            },
+
+            {
+              id: 3,
+              title: '还在长高的天际线',
+              category: '旅行',
+              date: '2026.08.29',
+              description: '塔吊举着半成品的高楼，也举着一座城市没写完的梦。',
+              color: 'linear-gradient(135deg, #93a9b8, #d9dcd6)',
+              src: 'images/照片墙3.jpg'
+            }
+            ,{
+              id: 4,
+              title: '云也停下来等灯',
+              category: '生活',
+              date: '2026.07.10',
+              description: '学校路口的红灯很长，正好抬头把云看个够。',
+              color: 'linear-gradient(135deg, #6fa8d0, #cfe4f2)',
+              src: 'images/照片墙4.jpg'
+            },
+          ],
+          photoFilter: '全部',
+          lightboxPhoto: null,
+          // 天气卡片状态
+          weather: {
+            loading: true,
+            error: false,
+            city: '',
+            desc: '',
+            icon: '⛅',
+            temp: '--',
+            wind: '',
+            humidity: '--',
+            updated: ''
+          },
+          // 音乐卡片状态：music 文件夹里的单曲
+          music: {
+            name: 'プロポーズ',
+            artist: '春畑道哉',
+            playing: false,
+            currentTime: 0,
+            duration: 0
+          },
+          // IP 卡片状态
+          ip: {
+            loading: true,
+            error: false,
+            address: '',
+            location: '',
+            updated: ''
+          },
+          // IP 归属地缓存时长
+          ipCacheTTL: 60 * 60 * 1000,
+          // 天气卡片配置：浏览器定位和 IP 定位都失败时使用默认城市
+          weatherConfig: {
+            defaultCity: '北京',
+            defaultLat: 39.9042,
+            defaultLon: 116.4074,
+            weatherTTL: 60 * 60 * 1000,      // 天气缓存 1 小时
+            locationTTL: 4 * 60 * 60 * 1000  // 定位缓存 4 小时
+          }
+        };
+      },
+      computed: {
+        sortedArticles() {
+          return [...this.articles].sort((a, b) => {
+            return this.articleTimestamp(b.rawDate) - this.articleTimestamp(a.rawDate);
+          });
+        },
+        totalPages() {
+          return Math.ceil(this.sortedArticles.length / this.pageSize) || 1;
+        },
+        pagedArticles() {
+          const start = (this.currentListPage - 1) * this.pageSize;
+          return this.sortedArticles.slice(start, start + this.pageSize);
+        },
+        currentArticle() {
+          return this.findArticle(this.currentArticleId) || {};
+        },
+        articleListHref() {
+          const page = this.articleListPage(this.currentArticle);
+          return page > 1 ? '#/page/' + page : '#/';
+        },
+        photoCategories() {
+          return ['全部', ...new Set(this.photos.map(photo => photo.category))];
+        },
+        filteredPhotos() {
+          return this.photoFilter === '全部'
+            ? this.photos
+            : this.photos.filter(photo => photo.category === this.photoFilter);
+        },
+        lightboxPhotoIndex() {
+          if (!this.lightboxPhoto) return 0;
+          const index = this.filteredPhotos.findIndex(photo => photo.id === this.lightboxPhoto.id);
+          return index < 0 ? 0 : index;
+        },
+        musicProgressPercent() {
+          if (!this.music.duration) return 0;
+          return Math.min(100, (this.music.currentTime / this.music.duration) * 100);
+        },
+        siteStats() {
+          const categories = new Set(
+            this.articles.map(article => article.category).filter(Boolean)
+          );
+          const totalWordCount = this.articles.reduce(
+            (total, article) => total + (article.wordCount || 0),
+            0
+          );
+          const latestArticle = this.sortedArticles[0];
+
+          return {
+            articleCount: this.articles.length,
+            categoryCount: categories.size,
+            wordCount: this.formatStatCount(totalWordCount),
+            latestUpdate: latestArticle ? this.formatShortDate(latestArticle.rawDate) : '--'
+          };
+        },
+        // GitHub 风格更新热力图：26 周 ≈ 半年，每列一周（周日开头），
+        // 统计窗口内每天的文章数并映射到 5 档颜色深浅，未来日期留空
+        heatmap() {
+          const WEEKS = 26;
+          const now = new Date();
+          const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const firstSunday = new Date(startOfToday);
+          firstSunday.setDate(firstSunday.getDate() - firstSunday.getDay() - (WEEKS - 1) * 7);
+
+          const counts = {};
+          let total = 0;
+          for (const article of this.articles) {
+            const ts = this.articleTimestamp(article.rawDate);
+            if (!ts) continue;
+            const d = new Date(ts);
+            if (d < firstSunday || d > startOfToday) continue;
+            const key = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+            counts[key] = (counts[key] || 0) + 1;
+            total++;
+          }
+
+          const cells = [];
+          const months = [];
+          let lastMonth = -1;
+          let lastLabelCol = -3;
+          for (let w = 0; w < WEEKS; w++) {
+            for (let day = 0; day < 7; day++) {
+              const cur = new Date(firstSunday);
+              cur.setDate(firstSunday.getDate() + w * 7 + day);
+              const future = cur > startOfToday;
+              const count = future
+                ? 0
+                : (counts[cur.getFullYear() + '-' + cur.getMonth() + '-' + cur.getDate()] || 0);
+              const level = count === 0 ? 0 : Math.min(count, 4);
+              const weekday = '周' + '日一二三四五六'.charAt(cur.getDay());
+              const title = (cur.getMonth() + 1) + '月' + cur.getDate() + '日 ' + weekday
+                + (future ? '' : (count ? '：更新 ' + count + ' 篇' : '：无更新'));
+              cells.push({ future, level, title });
+            }
+            // 月份标签取该周中间日的月份；与上一标签间隔不足时顺延到下一周再标，
+            // 而不是直接丢掉这个月（否则会出现 3月 之后直接跳到 5月）
+            const mid = new Date(firstSunday);
+            mid.setDate(firstSunday.getDate() + w * 7 + 3);
+            const month = mid.getMonth();
+            if (month !== lastMonth) {
+              const isLast = w === WEEKS - 1;
+              if (w - lastLabelCol >= (isLast ? 2 : 3)) {
+                months.push({ col: w + 1, label: (month + 1) + '月', end: isLast });
+                lastLabelCol = w;
+                lastMonth = month;
+              }
+            }
+          }
+
+          return {
+            total,
+            cells,
+            months,
+            dayLabels: ['', '一', '', '三', '', '五', '']
+          };
+        }
+      },
+      mounted() {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark' || saved === 'light') {
+          this.theme = saved;
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          this.theme = 'dark';
+        }
+        this.applyTheme();
+        this.applyRoute();
+        this.scanArticles();
+        this.loadWeather();
+        this.loadIp();
+        // 目录滚动高亮：滚动事件频率本身与帧率一致，31 个标题的读取开销极小，
+        // 不做 rAF 节流（后台标签页 rAF 冻结会导致监听失效）
+        this._onScroll = () => this.updateTocActive();
+        window.addEventListener('scroll', this._onScroll, { passive: true });
+        // hash 路由：点击链接、前进/后退、手动改地址统一走这里
+        this._onHashChange = () => this.applyRoute();
+        window.addEventListener('hashchange', this._onHashChange);
+        this._onKeydown = event => this.handlePhotoKeydown(event);
+        window.addEventListener('keydown', this._onKeydown);
+      },
+      beforeUnmount() {
+        window.removeEventListener('scroll', this._onScroll);
+        window.removeEventListener('hashchange', this._onHashChange);
+        window.removeEventListener('keydown', this._onKeydown);
+        document.body.classList.remove('photo-lightbox-open');
+      },
+      methods: {
+        toggleTheme() {
+          this.theme = this.theme === 'light' ? 'dark' : 'light';
+          localStorage.setItem('theme', this.theme);
+          this.applyTheme();
+        },
+        applyTheme() {
+          document.documentElement.classList.toggle('dark', this.theme === 'dark');
+        },
+        // ===== 音乐卡片 =====
+        toggleMusic() {
+          const audio = this.$refs.audioPlayer;
+          if (!audio) return;
+          if (audio.paused) {
+            audio.play().catch(() => {
+              // 播放失败（如浏览器拦截未交互的自动播放）时静默忽略
+            });
+          } else {
+            audio.pause();
+          }
+        },
+        onMusicTimeUpdate() {
+          const audio = this.$refs.audioPlayer;
+          if (audio) this.music.currentTime = audio.currentTime;
+        },
+        onMusicMetadata() {
+          const audio = this.$refs.audioPlayer;
+          if (audio) this.music.duration = audio.duration || 0;
+        },
+        seekMusic(event) {
+          const audio = this.$refs.audioPlayer;
+          if (!audio || !audio.duration) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+          audio.currentTime = ratio * audio.duration;
+          this.music.currentTime = audio.currentTime;
+        },
+        // 进度条键盘操作：左右方向键 ±5 秒（按住 Shift 为 ±30 秒），Home/End 跳到开头/结尾
+        handleMusicKeydown(event) {
+          const audio = this.$refs.audioPlayer;
+          if (!audio || !audio.duration) return;
+          const step = event.shiftKey ? 30 : 5;
+          if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            audio.currentTime = Math.max(0, audio.currentTime - step);
+          } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            audio.currentTime = Math.min(audio.duration, audio.currentTime + step);
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            audio.currentTime = 0;
+          } else if (event.key === 'End') {
+            event.preventDefault();
+            audio.currentTime = audio.duration;
+          }
+        },
+        formatMusicTime(seconds) {
+          if (!Number.isFinite(seconds) || seconds <= 0) return '0:00';
+          const total = Math.floor(seconds);
+          return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+        },
+        // ===== Hash 路由 =====
+        // URL 形式：#/ 首页、#/page/2 首页第 2 页、#/photos 照片墙、#/cardwall 卡片墙、#/about 关于页、
+        // #/article/<文件名> 文章详情（兼容早期的 #/article/3 位置编号）。
+        // 导航只改 location.hash，页面状态统一由 hashchange → applyRoute 驱动，
+        // 地址栏随页面变化，刷新、前进/后退、分享链接都可用。
+        parseRoute() {
+          const path = location.hash.replace(/^#/, '');
+          let m;
+          if ((m = path.match(/^\/article\/([^/?#]+)/))) {
+            let id = m[1];
+            try { id = decodeURIComponent(id); } catch (e) {}
+            return { page: 'article', articleId: /^\d+$/.test(id) ? Number(id) : id };
+          }
+          if ((m = path.match(/^\/page\/(\d+)/))) {
+            return { page: 'home', listPage: Number(m[1]) };
+          }
+          if (path === '/photos') {
+            return { page: 'photos' };
+          }
+          if (path === '/cardwall') {
+            return { page: 'cardwall' };
+          }
+          if (path === '/about') {
+            return { page: 'about' };
+          }
+          return { page: 'home', listPage: 1 };
+        },
+        applyRoute() {
+          const route = this.parseRoute();
+          if (route.page !== 'home' && this.pendingListArticleId !== null) {
+            // 用户在定位完成前又离开列表页时，取消旧的定位请求，避免稍后误滚动。
+            this.pendingListArticleId = null;
+            this.listFocusToken++;
+          }
+          this.currentArticleId = null;
+          this.currentArticleContent = '';
+          this.toc = [];
+          this.activeTocId = '';
+          this.closePhoto();
+          if (route.page === 'article') {
+            this.currentPage = 'article';
+            this.currentArticleId = route.articleId;
+            this.loadingArticle = true;
+            this.loadMarkdown(route.articleId);
+          } else if (route.page === 'photos') {
+            this.currentPage = 'photos';
+          } else if (route.page === 'cardwall') {
+            this.currentPage = 'cardwall';
+          } else if (route.page === 'about') {
+            this.currentPage = 'about';
+          } else {
+            this.currentPage = 'home';
+            // 文章清单未加载完时 totalPages 为 1，scanArticles 结束后会按 URL 重新同步
+            this.currentListPage = Math.min(Math.max(1, route.listPage), Math.max(1, this.totalPages));
+            const pendingArticleId = this.pendingListArticleId;
+            const focusToken = this.listFocusToken;
+            if (pendingArticleId !== null) {
+              this.$nextTick(() => this.scrollToArticleCard(pendingArticleId, focusToken));
+            }
+          }
+          this.jumpToScrollPosition(0);
+          this.updateTitle();
+        },
+        // 标题与描述同步到 <title> 和 meta：JS 渲染的页面至少让能执行脚本的爬虫读到这些
+        updateTitle() {
+          const defaultDesc = 'LeeYee 的博客：记录折腾 VPS、域名、AI 工具与建站日常。';
+          let title = this.blog.title;
+          let desc = defaultDesc;
+          if (this.currentPage === 'article' && this.currentArticle.title) {
+            title = this.currentArticle.title + ' - ' + this.blog.title;
+            if (this.currentArticle.summary) desc = this.currentArticle.summary;
+          } else if (this.currentPage === 'photos') {
+            title = '照片墙 - ' + this.blog.title;
+            desc = '照片墙：把路过的风景、日常和灵感留在这里。';
+          } else if (this.currentPage === 'cardwall') {
+            title = '卡片墙 - ' + this.blog.title;
+            desc = '卡片墙：站点的小卡片，排成一面墙。';
+          } else if (this.currentPage === 'about') {
+            title = '关于 - ' + this.blog.title;
+            desc = '关于本站：使用 Vue 3 构建的静态博客，文章用 Markdown 编写。';
+          }
+          document.title = title;
+          this.setMeta('description', desc);
+          this.setMeta('og:title', title, 'property');
+          this.setMeta('og:description', desc, 'property');
+          this.setMeta('og:type', this.currentPage === 'article' ? 'article' : 'website', 'property');
+        },
+        setMeta(key, value, attr) {
+          const el = document.querySelector('meta[' + (attr || 'name') + '="' + key + '"]');
+          if (el) el.setAttribute('content', value);
+        },
+        // ===== 照片墙 =====
+        setPhotoFilter(category) {
+          this.photoFilter = category;
+          if (this.lightboxPhoto && !this.filteredPhotos.some(photo => photo.id === this.lightboxPhoto.id)) {
+            this.closePhoto();
+          }
+        },
+        openPhoto(photo) {
+          this.lightboxPhoto = photo;
+          document.body.classList.add('photo-lightbox-open');
+          this.$nextTick(() => {
+            if (this.$refs.photoClose) this.$refs.photoClose.focus();
+          });
+        },
+        closePhoto() {
+          this.lightboxPhoto = null;
+          if (document.body) document.body.classList.remove('photo-lightbox-open');
+        },
+        showPreviousPhoto() {
+          if (this.filteredPhotos.length < 2) return;
+          const index = this.lightboxPhotoIndex;
+          this.lightboxPhoto = this.filteredPhotos[
+            (index - 1 + this.filteredPhotos.length) % this.filteredPhotos.length
+          ];
+        },
+        showNextPhoto() {
+          if (this.filteredPhotos.length < 2) return;
+          const index = this.lightboxPhotoIndex;
+          this.lightboxPhoto = this.filteredPhotos[(index + 1) % this.filteredPhotos.length];
+        },
+        handlePhotoKeydown(event) {
+          if (!this.lightboxPhoto) return;
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            this.closePhoto();
+          } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            this.showPreviousPhoto();
+          } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            this.showNextPhoto();
+          }
+        },
+        markPhotoBroken(photo) {
+          photo.broken = true;
+        },
+        goToPage(n) {
+          this.pendingListArticleId = null;
+          this.listFocusToken++;
+          location.hash = n > 1 ? '#/page/' + n : '#/';
+        },
+        prevPage() {
+          if (this.currentListPage > 1) this.goToPage(this.currentListPage - 1);
+        },
+        nextPage() {
+          if (this.currentListPage < this.totalPages) this.goToPage(this.currentListPage + 1);
+        },
+        articleCardId(id) {
+          return 'article-card-' + encodeURIComponent(String(id == null ? '' : id));
+        },
+        articleListPage(article) {
+          if (!article) return this.currentListPage;
+          const index = this.sortedArticles.findIndex(item => item.id === article.id);
+          return index < 0 ? this.currentListPage : Math.floor(index / this.pageSize) + 1;
+        },
+        returnToArticleList() {
+          const article = this.currentArticle;
+          this.listFocusToken++;
+          this.pendingListArticleId = article && article.id ? article.id : null;
+          const page = this.articleListPage(article);
+          location.hash = page > 1 ? '#/page/' + page : '#/';
+        },
+        // ===== 天气卡片 =====
+        // 数据源：Open-Meteo（免费、无需 Key、支持跨域）
+        // 定位：浏览器定位（需授权）→ IP 定位（ipwho.is / ipapi.co）→ 默认城市
+        // 缓存：天气 1 小时 / 定位 4 小时，存 sessionStorage
+        // 手动刷新：清掉天气和定位缓存后重新加载
+        refreshWeather() {
+          try {
+            sessionStorage.removeItem('weather_cache');
+            sessionStorage.removeItem('weather_location');
+          } catch (e) {}
+          this.weather.loading = true;
+          this.weather.error = false;
+          this.loadWeather();
+        },
+        async loadWeather() {
+          const cached = this.getWeatherCache();
+          if (cached) {
+            this.applyWeather(cached);
+            return;
+          }
+          try {
+            const loc = await this.getLocation();
+            const url = 'https://api.open-meteo.com/v1/forecast'
+              + '?latitude=' + loc.lat
+              + '&longitude=' + loc.lon
+              + '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,is_day'
+              + '&timezone=auto';
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error('weather http ' + resp.status);
+            const data = await resp.json();
+            const cur = data.current;
+            if (!cur) throw new Error('weather empty');
+            const info = this.mapWeatherCode(cur.weather_code, cur.is_day !== 0);
+            const result = {
+              city: loc.city,
+              desc: info.text,
+              icon: info.icon,
+              temp: Math.round(cur.temperature_2m),
+              wind: this.windDirection(cur.wind_direction_10m) + ' ' + Math.round(cur.wind_speed_10m) + ' km/h',
+              humidity: cur.relative_humidity_2m,
+              updated: this.formatTime(Date.now())
+            };
+            try {
+              sessionStorage.setItem('weather_cache', JSON.stringify({ data: result, t: Date.now() }));
+            } catch (e) {}
+            this.applyWeather(result);
+          } catch (e) {
+            this.weather.loading = false;
+            this.weather.error = true;
+          }
+        },
+        getWeatherCache() {
+          try {
+            const raw = sessionStorage.getItem('weather_cache');
+            if (!raw) return null;
+            const d = JSON.parse(raw);
+            if (Date.now() - d.t > this.weatherConfig.weatherTTL) {
+              sessionStorage.removeItem('weather_cache');
+              return null;
+            }
+            return d.data;
+          } catch (e) {
+            return null;
+          }
+        },
+        async getLocation() {
+          try {
+            const raw = sessionStorage.getItem('weather_location');
+            if (raw) {
+              const d = JSON.parse(raw);
+              if (Date.now() - d.t < this.weatherConfig.locationTTL) return d;
+            }
+          } catch (e) {}
+
+          // 1) 浏览器定位：最准确，不受代理/VPN 影响（需用户授权一次）
+          try {
+            const coords = await this.browserLocate();
+            const loc = {
+              lat: coords.latitude,
+              lon: coords.longitude,
+              city: await this.reverseGeocode(coords.latitude, coords.longitude) || this.weatherConfig.defaultCity,
+              t: Date.now()
+            };
+            try {
+              sessionStorage.setItem('weather_location', JSON.stringify(loc));
+            } catch (e) {}
+            return loc;
+          } catch (e) {}
+
+          // 2) IP 定位：无需授权，但走代理/VPN 时定位到的是出口节点位置
+          const ipProviders = [
+            {
+              url: 'https://ipwho.is/',
+              parse: d => (d && d.success !== false && d.latitude)
+                ? { lat: d.latitude, lon: d.longitude, city: d.city || d.region }
+                : null
+            },
+            {
+              url: 'https://ipapi.co/json/',
+              parse: d => (d && d.latitude)
+                ? { lat: d.latitude, lon: d.longitude, city: d.city || d.region }
+                : null
+            }
+          ];
+          for (const p of ipProviders) {
+            try {
+              const resp = await fetch(p.url);
+              const loc = p.parse(await resp.json());
+              if (loc) {
+                if (!loc.city) loc.city = this.weatherConfig.defaultCity;
+                loc.t = Date.now();
+                try {
+                  sessionStorage.setItem('weather_location', JSON.stringify(loc));
+                } catch (e) {}
+                return loc;
+              }
+            } catch (e) {}
+          }
+
+          // 3) 默认城市兜底
+          return {
+            lat: this.weatherConfig.defaultLat,
+            lon: this.weatherConfig.defaultLon,
+            city: this.weatherConfig.defaultCity,
+            t: Date.now()
+          };
+        },
+        browserLocate() {
+          return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) return reject(new Error('no geolocation'));
+            navigator.geolocation.getCurrentPosition(
+              p => resolve(p.coords),
+              e => reject(e),
+              { timeout: 8000, maximumAge: 30 * 60 * 1000 }
+            );
+          });
+        },
+        // 坐标 → 城市名（BigDataCloud 免费逆地理编码，无需 Key）
+        async reverseGeocode(lat, lon) {
+          try {
+            const resp = await fetch(
+              'https://api.bigdatacloud.net/data/reverse-geocode-client'
+              + '?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=zh'
+            );
+            const d = await resp.json();
+            return d.city || d.locality || d.principalSubdivision || '';
+          } catch (e) {
+            return '';
+          }
+        },
+        applyWeather(result) {
+          Object.assign(this.weather, result, { loading: false, error: false });
+        },
+        // WMO 天气码 → 中文描述 + 图标（区分昼夜）
+        mapWeatherCode(code, isDay) {
+          const map = {
+            0: ['晴', isDay ? '☀️' : '🌙'],
+            1: ['大致晴朗', isDay ? '🌤️' : '🌙'],
+            2: ['多云', '⛅'],
+            3: ['阴', '☁️'],
+            45: ['雾', '🌫️'], 48: ['雾凇', '🌫️'],
+            51: ['毛毛雨', '🌦️'], 53: ['毛毛雨', '🌦️'], 55: ['毛毛雨', '🌧️'],
+            56: ['冻毛毛雨', '🌧️'], 57: ['冻毛毛雨', '🌧️'],
+            61: ['小雨', '🌦️'], 63: ['中雨', '🌧️'], 65: ['大雨', '🌧️'],
+            66: ['冻雨', '🌧️'], 67: ['冻雨', '🌧️'],
+            71: ['小雪', '🌨️'], 73: ['中雪', '🌨️'], 75: ['大雪', '❄️'],
+            77: ['雪粒', '🌨️'],
+            80: ['阵雨', '🌦️'], 81: ['阵雨', '🌧️'], 82: ['暴雨', '⛈️'],
+            85: ['阵雪', '🌨️'], 86: ['阵雪', '❄️'],
+            95: ['雷阵雨', '⛈️'], 96: ['雷阵雨伴冰雹', '⛈️'], 99: ['雷阵雨伴冰雹', '⛈️']
+          };
+          const hit = map[code];
+          return hit ? { text: hit[0], icon: hit[1] } : { text: '未知', icon: '⛅' };
+        },
+        windDirection(deg) {
+          const dirs = ['北风', '东北风', '东风', '东南风', '南风', '西南风', '西风', '西北风'];
+          return dirs[Math.round(deg / 45) % 8];
+        },
+        formatTime(ts) {
+          const d = new Date(ts);
+          const h = String(d.getHours()).padStart(2, '0');
+          const m = String(d.getMinutes()).padStart(2, '0');
+          return h + ':' + m;
+        },
+        // ===== IP 卡片 =====
+        // 数据源：ipwho.is → ipapi.co 依次尝试（免费、无需 Key、支持跨域）
+        // 缓存 1 小时，存 sessionStorage；手动刷新清缓存后重新加载
+        refreshIp() {
+          try {
+            sessionStorage.removeItem('ip_cache');
+          } catch (e) {}
+          this.ip.loading = true;
+          this.ip.error = false;
+          this.loadIp();
+        },
+        async loadIp() {
+          const cached = this.getIpCache();
+          if (cached) {
+            this.applyIp(cached);
+            return;
+          }
+          const providers = [
+            {
+              url: 'https://ipwho.is/?lang=zh-CN',
+              parse: d => (d && d.success !== false && d.ip)
+                ? { address: d.ip, location: this.formatIpLocation(d.region, d.city, d.country, d.country_code) }
+                : null
+            },
+            {
+              url: 'https://ipapi.co/json/',
+              parse: d => (d && d.ip)
+                ? { address: d.ip, location: this.formatIpLocation(d.region, d.city, d.country_name, d.country_code) }
+                : null
+            }
+          ];
+          for (const p of providers) {
+            try {
+              const resp = await fetch(p.url);
+              const result = p.parse(await resp.json());
+              if (result && result.location) {
+                result.updated = this.formatTime(Date.now());
+                try {
+                  sessionStorage.setItem('ip_cache', JSON.stringify({ data: result, t: Date.now() }));
+                } catch (e) {}
+                this.applyIp(result);
+                return;
+              }
+            } catch (e) {}
+          }
+          this.ip.loading = false;
+          this.ip.error = true;
+        },
+        // 归属地展示：国内显示「省份 城市」，国外显示「国家 城市」（国家名转成中文）
+        formatIpLocation(region, city, country, countryCode) {
+          const parts = countryCode === 'CN'
+            ? [region, city]
+            : [this.countryName(countryCode, country), city];
+          return parts.filter(Boolean).join(' ');
+        },
+        // 国家代码 → 中文国名，用浏览器内置的 Intl 数据，不需要维护映射表
+        countryName(code, fallback) {
+          if (!code) return fallback || '';
+          try {
+            const display = new Intl.DisplayNames(['zh-CN'], { type: 'region' });
+            return display.of(String(code).toUpperCase()) || fallback || code;
+          } catch (e) {
+            return fallback || code;
+          }
+        },
+        getIpCache() {
+          try {
+            const raw = sessionStorage.getItem('ip_cache');
+            if (!raw) return null;
+            const d = JSON.parse(raw);
+            if (Date.now() - d.t > this.ipCacheTTL) {
+              sessionStorage.removeItem('ip_cache');
+              return null;
+            }
+            return d.data;
+          } catch (e) {
+            return null;
+          }
+        },
+        applyIp(result) {
+          Object.assign(this.ip, result, { loading: false, error: false });
+        },
+        // 文章清单由 scripts/build-index.js 生成，含标题/日期/分类/摘要/字数：
+        // 列表页只请求这一份 JSON，不必再逐篇下载正文。
+        // 兼容旧格式（纯文件名数组）：那种情况下才逐篇拉取正文解析元数据。
+        async scanArticles() {
+          this.loading = true;
+          try {
+            const listResp = await fetch('articles/index.json' + this.assetVersion);
+            if (!listResp.ok) throw new Error('index.json ' + listResp.status);
+            const data = await listResp.json();
+
+            let entries = [];
+            if (Array.isArray(data)) {
+              entries = data;
+            } else if (data && Array.isArray(data.articles)) {
+              entries = data.articles;
+              if (data.generated) this.assetVersion = '?v=' + data.generated;
+            }
+
+            const ready = [];
+            const pending = [];
+            entries.forEach((entry, index) => {
+              const file = typeof entry === 'string' ? entry : entry.file;
+              if (!file) return;
+              const base = {
+                // id 用文件名：稳定，往清单里插新文章不会改变已有文章的链接
+                id: file.replace(/\.md$/, ''),
+                legacyId: index + 1,
+                filename: 'articles/' + file
+              };
+              if (typeof entry === 'object' && entry.title) {
+                ready.push(Object.assign(base, {
+                  title: entry.title,
+                  rawDate: entry.date || '',
+                  date: this.formatDate(entry.date || ''),
+                  category: entry.category || '',
+                  summary: entry.summary || '',
+                  wordCount: entry.wordCount || 0
+                }));
+              } else {
+                pending.push(base);
+              }
+            });
+
+            const fetched = await Promise.all(pending.map(base =>
+              fetch(base.filename + this.assetVersion)
+                .then(res => {
+                  if (!res.ok) throw new Error('Not found');
+                  return res.text();
+                })
+                .then(text => Object.assign(base, this.parseMarkdown(text)))
+                .catch(() => null)
+            ));
+
+            this.articles = ready.concat(fetched.filter(r => r !== null));
+          } catch (err) {
+            console.error('扫描文章失败:', err);
+            this.articles = [];
+          } finally {
+            this.loading = false;
+            // 文章清单是异步加载的：直接打开 #/page/2 时清单未就绪会被压到第 1 页，
+            // 直接打开 #/article/3 时 loadMarkdown 拿不到文章会先挂起，这里统一按 URL 重放一次
+            const route = this.parseRoute();
+            if (route.page === 'home' && route.listPage) {
+              this.currentListPage = Math.min(Math.max(1, route.listPage), Math.max(1, this.totalPages));
+            } else if (route.page === 'article') {
+              this.loadMarkdown(route.articleId);
+            }
+            this.updateTitle();
+          }
+        },
+        // 从 Markdown 正文解析标题 / 日期 / 分类 / 摘要 / 字数（旧格式清单的兜底路径，
+        // 新格式下这些字段由 scripts/build-index.js 预先生成，前端不必再读正文）
+        parseMarkdown(text) {
+          const lines = text.split('\n');
+          let title = '';
+          let date = '';
+          let category = '';
+          let contentStart = 0;
+
+          // 解析标题（第一个 # 开头的行）
+          for (let i = 0; i < lines.length; i++) {
+            const match = lines[i].match(/^#\s+(.+)/);
+            if (match) {
+              title = match[1].trim();
+              contentStart = i + 1;
+              break;
+            }
+          }
+
+          // 解析元数据（> 日期： 和 > 分类：）
+          for (let i = contentStart; i < Math.min(contentStart + 5, lines.length); i++) {
+            const line = lines[i].trim();
+            const dateMatch = line.match(/^>\s*日期[：:]\s*(.+)/);
+            const catMatch = line.match(/^>\s*分类[：:]\s*(.+)/);
+            if (dateMatch) date = dateMatch[1].trim();
+            if (catMatch) category = catMatch[1].trim();
+          }
+
+          // 生成摘要：逐行剥离 Markdown 语法后取正文前 150 字纯文本
+          let textContent = '';
+          let inCode = false;
+          for (let i = contentStart; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.startsWith('```')) {
+              inCode = !inCode;
+              continue;
+            }
+            if (!line || inCode || line.startsWith('>') || line.startsWith('#') || line.startsWith('!')) continue;
+            // 跳过水平分割线（--- *** ___）与表格行，避免摘要里出现原始语法
+            if (/^(-{3,}|\*{3,}|_{3,})$/.test(line) || line.startsWith('|')) continue;
+            textContent += this.stripMarkdown(line) + ' ';
+            if (textContent.length > 150) break;
+          }
+          textContent = textContent.trim();
+
+          // 统计文章正文中的非空字符，作为中文内容的近似字数
+          const wordCount = lines
+            .slice(contentStart)
+            .filter(line => !line.trim().match(/^>\s*(日期|分类)[：:]/))
+            .join(' ')
+            .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+            .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+            .replace(/[\s#>*`_~\-+]/g, '')
+            .length;
+
+          // 没有日期时用当天日期兜底，避免排序出现 NaN
+          if (!date) {
+            const today = new Date();
+            date = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+          }
+
+          return {
+            title,
+            rawDate: date,
+            date: this.formatDate(date),
+            category,
+            summary: textContent.substring(0, 150) + (textContent.length > 150 ? '...' : ''),
+            wordCount
+          };
+        },
+        // 文章 id 用文件名（稳定）；同时兼容早期的位置编号链接 #/article/3
+        findArticle(id) {
+          const key = String(id == null ? '' : id);
+          return this.articles.find(a => a.id === key) ||
+            this.articles.find(a => String(a.legacyId) === key) ||
+            null;
+        },
+        // 剥离行内 Markdown 语法（图片/链接/加粗/斜体/删除线/行内代码/列表标记/ANSI 转义符），供摘要展示纯文本
+        stripMarkdown(text) {
+          return text
+            .replace(/\x1b\[[0-9;]*[A-Za-z]/g, '')
+            .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+            .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+            .replace(/(\*\*|__)([^*_]*)\1/g, '$2')
+            .replace(/(\*|_)([^*_]*)\1/g, '$2')
+            .replace(/~~([^~]*)~~/g, '$1')
+            .replace(/`([^`]*)`/g, '$1')
+            .replace(/^([-*+]|\d+\.)\s+/, '');
+        },
+        // 解析文章日期为时间戳：支持 YYYY-MM-DD / YYYY年M月D日；解析失败按 0 排到最后，避免 NaN 破坏排序
+        articleTimestamp(dateStr) {
+          const m = String(dateStr || '').match(/(\d{4})\s*[-/\u5e74]?\s*(\d{1,2})\s*[-/\u6708]?\s*(\d{1,2})/);
+          if (!m) return 0;
+          return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+        },
+        formatDate(dateStr) {
+          // 支持 YYYY-MM-DD 或 YYYY 年 MM 月 DD 日
+          const match = dateStr.match(/(\d{4})[-\u5e74]?\s*(\d{1,2})?[-\u6708]?\s*(\d{1,2})?\u65e5?/);
+          if (match) {
+            const y = match[1];
+            const m = match[2] || '01';
+            const d = match[3] || '01';
+            return `${y} 年 ${m} 月 ${d} 日`;
+          }
+          return dateStr;
+        },
+        formatShortDate(dateStr) {
+          const match = String(dateStr || '').match(/(\d{4})[-\u5e74]?\s*(\d{1,2})?[-\u6708]?\s*(\d{1,2})?\u65e5?/);
+          if (!match || !match[2] || !match[3]) return '--';
+          return String(match[2]).padStart(2, '0') + '.' + String(match[3]).padStart(2, '0');
+        },
+        formatStatCount(count) {
+          if (count < 1000) return String(count);
+          if (count < 10000) {
+            return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+          }
+          return (count / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+        },
+        async loadMarkdown(id) {
+          const article = this.findArticle(id);
+          if (!article) {
+            // 启动时直接打开文章链接时清单可能还没加载完，等 scanArticles 完成后会重试
+            if (this.loading) return;
+            this.currentArticleContent = '<p class="error-message">文章不存在或已被删除。</p>';
+            this.loadingArticle = false;
+            return;
+          }
+
+          try {
+            const response = await fetch(article.filename + this.assetVersion);
+            const text = await response.text();
+
+            // 只剥离头部的标题与元数据行；代码块里的 ANSI 控制码交给终端渲染器处理，
+            // 普通正文中的控制码才在 Markdown 解析前移除。
+            let content = this.stripAnsiOutsideCodeFences(this.stripArticleHeader(text));
+
+            // 用 DOMParser 在渲染前提取标题并注入锚点 id，避免依赖渲染时序
+            const rendered = this.extractToc(marked.parse(content));
+            this.currentArticleContent = this.sanitizeHtml(rendered.html);
+            this.toc = rendered.toc;
+            this.$nextTick(() => this.updateTocActive());
+            this.updateTitle();
+          } catch (error) {
+            console.error('加载文章失败:', error);
+            this.currentArticleContent = '<p class="error-message">文章加载失败，请稍后重试。</p>';
+          } finally {
+            this.loadingArticle = false;
+          }
+        },
+        // 移除文章头部的标题行与 > 日期 / > 分类 元数据行，正文原样保留
+        stripArticleHeader(text) {
+          const lines = text.split('\n');
+          let titleIndex = -1;
+          for (let i = 0; i < lines.length; i++) {
+            if (/^#\s+/.test(lines[i])) {
+              titleIndex = i;
+              break;
+            }
+          }
+          if (titleIndex === -1) return text;
+          const drop = new Set([titleIndex]);
+          for (let i = titleIndex + 1; i < Math.min(titleIndex + 6, lines.length); i++) {
+            const line = lines[i].trim();
+            if (/^>\s*(日期|分类)[：:]/.test(line)) {
+              drop.add(i);
+            } else if (line && !line.startsWith('>')) {
+              break; // 元数据区结束，后面都是正文
+            }
+          }
+          return lines.filter((_, i) => !drop.has(i)).join('\n');
+        },
+        // 保留 fenced code block 中的 ANSI 转义序列，避免终端输出失去原始颜色；
+        // 正文区域若混入控制码则移除，防止它们污染普通文本或标题。
+        stripAnsiOutsideCodeFences(text) {
+          const lines = String(text).split('\n');
+          const ansiRe = /\x1b\[[0-9;?]*[ -\/]*[@-~]/g;
+          let fenceChar = '';
+          let fenceLength = 0;
+
+          return lines.map(line => {
+            const fence = line.match(/^\s*(`{3,}|~{3,})/);
+            if (fence) {
+              const marker = fence[1];
+              const char = marker.charAt(0);
+              if (!fenceChar) {
+                fenceChar = char;
+                fenceLength = marker.length;
+              } else if (char === fenceChar && marker.length >= fenceLength) {
+                fenceChar = '';
+                fenceLength = 0;
+              }
+              return line;
+            }
+            return fenceChar ? line : line.replace(ansiRe, '');
+          }).join('\n');
+        },
+        // 消毒渲染结果，并给外链补 target/rel（站内锚点链接保持原样）
+        sanitizeHtml(html) {
+          if (typeof DOMPurify === 'undefined') return html;
+          return DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'rel'] });
+        },
+        // ===== 文章目录（TOC）=====
+        // 从渲染出的 HTML 中收集 h2/h3/h4，注入锚点 id 并返回目录项；
+        // 同时按标题文本生成 slug 挂在 data-slug 上，供正文里的 #标题 链接定位
+        extractToc(html) {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const items = [];
+          const usedSlugs = new Set();
+          doc.body.querySelectorAll('h2, h3, h4').forEach((el, i) => {
+            const text = el.textContent.trim();
+            if (!text) return;
+            const id = 'toc-h-' + i;
+            el.setAttribute('id', id);
+
+            const slug = this.slugify(text);
+            if (slug) {
+              let unique = slug;
+              let n = 2;
+              while (usedSlugs.has(unique)) unique = slug + '-' + n++;
+              usedSlugs.add(unique);
+              el.setAttribute('data-slug', unique);
+            }
+
+            items.push({
+              id,
+              text,
+              depth: Math.min(parseInt(el.tagName.slice(1), 10) - 2, 2)
+            });
+          });
+
+          // 外链新窗口打开并补 noopener，避免 target=_blank 的权限泄漏
+          doc.body.querySelectorAll('a[href]').forEach(a => {
+            const href = a.getAttribute('href') || '';
+            if (/^https?:\/\//i.test(href) && href.indexOf(location.host) === -1) {
+              a.setAttribute('target', '_blank');
+              a.setAttribute('rel', 'noopener noreferrer');
+            }
+          });
+
+          // 代码块渲染：在 DOMParser 文档里原地改写，
+          // 先生成安全的高亮 HTML，再交给 DOMPurify 统一消毒。
+          this.highlightCodeBlocks(doc);
+
+          return { html: doc.body.innerHTML, toc: items };
+        },
+        // 渲染正文里的代码块：
+        // - 明确语言使用 highlight.js 精确高亮；
+        // - ansi / shell-session 使用终端渲染器，保留 ANSI SGR 颜色；
+        // - 未标注或未知语言保持纯文本，避免自动猜测误判日志和 ASCII 图。
+        highlightCodeBlocks(doc) {
+          doc.body.querySelectorAll('pre code').forEach(block => {
+            const langMatch = (block.getAttribute('class') || '').match(/language-([\w-]+)/);
+            const rawLang = langMatch ? langMatch[1].toLowerCase() : '';
+            const lang = this.normalizeCodeLanguage(rawLang);
+            const isTerminal = ['ansi', 'terminal', 'shell-session'].includes(lang);
+            let kind = isTerminal ? 'terminal' : 'source';
+
+            try {
+              if (isTerminal) {
+                this.renderAnsiCode(block);
+              } else if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) {
+                block.innerHTML = hljs.highlight(block.textContent, {
+                  language: lang,
+                  ignoreIllegals: true
+                }).value;
+                block.classList.add('hljs');
+              } else {
+                // 明确告诉浏览器这是纯文本，避免未知语言残留旧的子节点。
+                block.textContent = block.textContent;
+              }
+            } catch (e) {}
+
+            const pre = block.parentElement;
+            if (!pre || pre.parentElement?.classList.contains('code-block')) return;
+            const preParent = pre.parentElement;
+
+            const wrapper = doc.createElement('div');
+            wrapper.className = 'code-block code-block-' + kind;
+
+            const header = doc.createElement('div');
+            header.className = 'code-block-header';
+
+            const label = doc.createElement('span');
+            label.className = 'code-block-language';
+            label.textContent = this.formatCodeLanguage(lang || rawLang, kind);
+
+            const copy = doc.createElement('button');
+            copy.className = 'code-copy-button';
+            copy.type = 'button';
+            copy.setAttribute('aria-label', '复制' + (kind === 'terminal' ? '终端输出' : '代码'));
+            copy.textContent = '复制';
+
+            header.append(label, copy);
+            preParent.replaceChild(wrapper, pre);
+            wrapper.append(header, pre);
+          });
+        },
+        normalizeCodeLanguage(language) {
+          const aliases = {
+            js: 'javascript',
+            jsx: 'javascript',
+            mjs: 'javascript',
+            ts: 'typescript',
+            tsx: 'typescript',
+            html: 'xml',
+            vue: 'xml',
+            sh: 'bash',
+            zsh: 'bash',
+            shell: 'bash',
+            yml: 'yaml',
+            md: 'markdown',
+            text: '',
+            txt: '',
+            plain: '',
+            plaintext: ''
+          };
+          return aliases[language] ?? language;
+        },
+        formatCodeLanguage(language, kind) {
+          if (kind === 'terminal') return 'Terminal';
+          if (!language) return 'Text';
+          const labels = {
+            bash: 'Bash',
+            c: 'C',
+            cpp: 'C++',
+            css: 'CSS',
+            go: 'Go',
+            java: 'Java',
+            javascript: 'JavaScript',
+            json: 'JSON',
+            markdown: 'Markdown',
+            php: 'PHP',
+            python: 'Python',
+            rust: 'Rust',
+            sql: 'SQL',
+            typescript: 'TypeScript',
+            xml: 'HTML/XML',
+            yaml: 'YAML'
+          };
+          return labels[language] || String(language).toUpperCase();
+        },
+        // 把终端里的 SGR 控制码转换成受控的 ansi-* class；未知 CSI 控制码直接隐藏。
+        renderAnsiCode(block) {
+          const doc = block.ownerDocument;
+          const raw = block.textContent || '';
+          const fragment = doc.createDocumentFragment();
+          const active = new Set();
+          const ansiRe = /\x1b\[([0-9;?]*)([ -\/]*)([@-~])/g;
+          let cursor = 0;
+
+          const appendText = text => {
+            if (!text) return;
+            if (active.size === 0) {
+              fragment.appendChild(doc.createTextNode(text));
+              return;
+            }
+            const span = doc.createElement('span');
+            span.className = Array.from(active).join(' ');
+            span.textContent = text;
+            fragment.appendChild(span);
+          };
+
+          const removeColor = prefix => {
+            Array.from(active).forEach(name => {
+              if (name.startsWith(prefix)) active.delete(name);
+            });
+          };
+
+          const addColor = (prefix, color) => {
+            removeColor(prefix);
+            active.add(prefix + color);
+          };
+
+          const applySgr = params => {
+            const values = params === '' ? [0] : params.split(';').map(Number);
+            for (let i = 0; i < values.length; i++) {
+              const value = values[i];
+              if (value === 0) {
+                active.clear();
+              } else if (value === 1) {
+                active.add('ansi-bold');
+              } else if (value === 2) {
+                active.add('ansi-dim');
+              } else if (value === 3) {
+                active.add('ansi-italic');
+              } else if (value === 4) {
+                active.add('ansi-underline');
+              } else if (value === 22) {
+                active.delete('ansi-bold');
+                active.delete('ansi-dim');
+              } else if (value === 23) {
+                active.delete('ansi-italic');
+              } else if (value === 24) {
+                active.delete('ansi-underline');
+              } else if (value === 39) {
+                removeColor('ansi-fg-');
+              } else if (value === 49) {
+                removeColor('ansi-bg-');
+              } else if (value >= 30 && value <= 37) {
+                addColor('ansi-fg-', ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'][value - 30]);
+              } else if (value >= 40 && value <= 47) {
+                addColor('ansi-bg-', ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'][value - 40]);
+              } else if (value >= 90 && value <= 97) {
+                addColor('ansi-fg-bright-', ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'][value - 90]);
+              } else if (value >= 100 && value <= 107) {
+                addColor('ansi-bg-bright-', ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'][value - 100]);
+              }
+            }
+          };
+
+          let match;
+          while ((match = ansiRe.exec(raw))) {
+            appendText(raw.slice(cursor, match.index));
+            if (match[3] === 'm') applySgr(match[1]);
+            cursor = ansiRe.lastIndex;
+          }
+          appendText(raw.slice(cursor).replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]/g, ''));
+          block.replaceChildren(fragment);
+          block.classList.add('ansi-code');
+        },
+        async copyCodeBlock(button) {
+          const code = button.closest('.code-block')?.querySelector('code');
+          if (!code) return;
+          const value = code.textContent || '';
+          let copied = false;
+
+          try {
+            if (navigator.clipboard?.writeText) {
+              await navigator.clipboard.writeText(value);
+              copied = true;
+            }
+          } catch (e) {}
+
+          if (!copied) {
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try { copied = document.execCommand('copy'); } catch (e) {}
+            textarea.remove();
+          }
+
+          const original = button.textContent;
+          button.textContent = copied ? '已复制' : '复制失败';
+          button.classList.toggle('is-copied', copied);
+          clearTimeout(button._copyTimer);
+          button._copyTimer = setTimeout(() => {
+            button.textContent = original;
+            button.classList.remove('is-copied');
+          }, 1600);
+        },
+        // 标题文本 → 锚点 slug，规则与常见的 GitHub 风格一致：
+        // "八、行动清单 Checklist" → "八行动清单-checklist"
+        slugify(text) {
+          return String(text)
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w\u4e00-\u9fa5-]/g, '');
+        },
+        // 正文里的 #锚点 链接：先按 id 找，再按标题 slug 找，找不到就什么都不做
+        // （不能让它落到 hash 路由上，否则会被当成未知路由跳回首页）
+        handleContentClick(event) {
+          const copyButton = event.target.closest('.code-copy-button');
+          if (copyButton && event.currentTarget.contains(copyButton)) {
+            event.preventDefault();
+            this.copyCodeBlock(copyButton);
+            return;
+          }
+          const link = event.target.closest('a[href^="#"]');
+          if (!link) return;
+          const href = link.getAttribute('href') || '';
+          if (href.startsWith('#/')) return; // 站内路由链接（如指向另一篇文章）交给 hash 路由
+          const fragment = href.slice(1);
+          if (!fragment) return;
+          event.preventDefault();
+          const id = this.resolveAnchorId(fragment);
+          if (id) this.scrollToHeading(id);
+        },
+        resolveAnchorId(fragment) {
+          let decoded = fragment;
+          try { decoded = decodeURIComponent(fragment); } catch (e) {}
+          const byId = document.getElementById(decoded);
+          if (byId && byId.closest('.article-content')) return decoded;
+          const slug = this.slugify(decoded);
+          const nodes = document.querySelectorAll('.article-content [data-slug]');
+          for (const node of nodes) {
+            if (node.getAttribute('data-slug') === slug && node.id) return node.id;
+          }
+          return '';
+        },
+        // 滚动监听：高亮当前阅读位置对应的目录项
+        updateTocActive() {
+          if (this.currentPage !== 'article' || this.toc.length === 0) return;
+          const offset = 120; // 与 html 的 scroll-padding-top 对齐，预留导航栏高度
+          let current = '';
+          for (const item of this.toc) {
+            const el = document.getElementById(item.id);
+            if (el && el.getBoundingClientRect().top <= offset) {
+              current = item.id;
+            }
+          }
+          // 页面滚到底部时，直接高亮最后一个目录项
+          if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+            current = this.toc[this.toc.length - 1].id;
+          }
+          this.activeTocId = current || this.toc[0].id;
+        },
+        // 点击目录项：滚动到对应标题（scroll-padding-top 已处理导航栏遮挡；
+        // 不指定 behavior，跟随 CSS scroll-behavior: smooth，减少动态偏好时自动降为即时跳转）
+        scrollToHeading(id) {
+          const el = document.getElementById(id);
+          if (!el) return;
+          this.activeTocId = id;
+          el.scrollIntoView({ block: 'start' });
+        },
+        // 返回文章列表后，定位到刚才打开的文章卡片；列表尚未渲染完成时持续重试
+        scrollToArticleCard(articleId, focusToken, attempt = 0) {
+          if (this.currentPage !== 'home' || focusToken !== this.listFocusToken) return;
+          const article = this.findArticle(articleId);
+          const targetId = this.articleCardId(article ? article.id : articleId);
+          const el = document.getElementById(targetId);
+          if (!el) {
+            if (attempt < 60) {
+              requestAnimationFrame(() => this.scrollToArticleCard(articleId, focusToken, attempt + 1));
+            } else if (this.pendingListArticleId === articleId) {
+              this.pendingListArticleId = null;
+            }
+            return;
+          }
+
+          const scrollPaddingTop = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+          const top = Math.max(0, window.scrollY + el.getBoundingClientRect().top - scrollPaddingTop);
+          this.jumpToScrollPosition(top);
+          this.pendingListArticleId = null;
+        },
+        // 全局样式启用了平滑滚动；返回列表定位时临时关闭它，避免旧动画覆盖目标位置
+        jumpToScrollPosition(top) {
+          const root = document.documentElement;
+          const scrollingElement = document.scrollingElement || root;
+          const previousBehavior = root.style.scrollBehavior;
+          root.style.scrollBehavior = 'auto';
+          scrollingElement.scrollTop = top;
+          root.style.scrollBehavior = previousBehavior;
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
